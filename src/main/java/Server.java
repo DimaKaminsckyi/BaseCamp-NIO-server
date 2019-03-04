@@ -98,6 +98,10 @@ public class Server implements Runnable {
                 messageBox.put(idTo, sb.substring(4));
                 if (key.isValid()){key.interestOps(SelectionKey.OP_WRITE);}
             }
+            else if (sb.toString().contains("broadcast")){
+                messageBox.put(idFrom , sb.substring(9));
+                broadcast("From " + idFrom + " " + messageBox.get(idFrom));
+            }
 
         } catch (IOException e) {
             log.info(idTo + " left the chat.\n");
@@ -123,6 +127,19 @@ public class Server implements Runnable {
         bytes = s.getBytes();
         socketChannelTo.write(ByteBuffer.wrap(bytes));
         key.interestOps(SelectionKey.OP_READ);
+    }
+
+    private void broadcast(String msg) throws IOException {
+        ByteBuffer msgBuf=ByteBuffer.wrap(msg.getBytes());
+        for(SelectionKey key : selector.keys()) {
+            if(key.isValid() && key.channel() instanceof SocketChannel) {
+                SocketChannel sch=(SocketChannel) key.channel();
+                sch.write(msgBuf);
+                idTo = getUserId(sch);
+                log.info("From " + idFrom + " to " + idTo + " " + msg);
+                msgBuf.rewind();
+            }
+        }
     }
 
     private String generateId() {

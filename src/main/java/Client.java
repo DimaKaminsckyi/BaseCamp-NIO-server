@@ -36,14 +36,19 @@ public class Client implements Runnable {
             do {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
                 try {
-                    System.out.println("Id user: ");
+                    System.out.println("Id user/broadcast : ");
                     idTo = reader.readLine();
                     stringBuffer.append(idTo);
 
                     System.out.println("Message : ");
                     message = reader.readLine();
-                    stringBuffer.append(Encryption.XOR(message , key));
-                    stringBuffer.insert(1, "has0|");
+
+                    if (!idTo.contains("broadcast")){
+                        stringBuffer.append(Encryption.XOR(message, key));
+                        stringBuffer.insert(1, "has0|");
+                    }
+                    else
+                        stringBuffer.append(message);
                     writeMessageToTheServer();
 
                 } catch (IOException e) {
@@ -57,7 +62,6 @@ public class Client implements Runnable {
 
         try {
             while (true) {
-
                 buffer.clear();
                 socketChannel.read(buffer);
                 stringBuffer.append(new String(getByteArrayFromByteBuffer(buffer)));
