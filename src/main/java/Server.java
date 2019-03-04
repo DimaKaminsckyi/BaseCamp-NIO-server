@@ -95,7 +95,7 @@ public class Server implements Runnable {
 
             if (Character.isDigit(sb.charAt(0))){
                 idTo = sb.substring(0, 1);
-                messageBox.put(idTo, sb.substring(1));
+                messageBox.put(idTo, sb.substring(4));
                 if (key.isValid()){key.interestOps(SelectionKey.OP_WRITE);}
             }
 
@@ -113,7 +113,7 @@ public class Server implements Runnable {
         String s = "";
 
         if (!(socketId.get(idTo)==null)&& socketId.get(idTo).getRemoteAddress().toString().equals(socketChannelTo.getRemoteAddress().toString())) {
-            s = messageBox.get(idTo);
+            s = idTo + "|" + idFrom + "|" + messageBox.get(idTo);
             log.info("writing to " + idTo + " user " + s);
             messageBox.remove(idTo);
 

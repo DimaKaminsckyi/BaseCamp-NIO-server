@@ -12,11 +12,15 @@ public class Client implements Runnable {
     private final int port;
     private SocketChannel socketChannel;
     private SocketAddress socketAddress;
+    private KeyGenerator keyGenerator;
+    private String key;
 
     private Client(int port) throws IOException {
         this.port = port;
         this.socketAddress = new InetSocketAddress("localhost", port);
         this.socketChannel = SocketChannel.open(socketAddress);
+        this.keyGenerator = new KeyGenerator();
+        key = keyGenerator.generate();
     }
 
     private static volatile StringBuffer stringBuffer = new StringBuffer();
@@ -32,13 +36,14 @@ public class Client implements Runnable {
             do {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
                 try {
-                    System.out.println("Id user : ");
+                    System.out.println("Id user: ");
                     idTo = reader.readLine();
                     stringBuffer.append(idTo);
 
                     System.out.println("Message : ");
                     message = reader.readLine();
-                    stringBuffer.append(message);
+                    stringBuffer.append(Encryption.XOR(message , key));
+                    stringBuffer.insert(1, "has0|");
                     writeMessageToTheServer();
 
                 } catch (IOException e) {
@@ -52,11 +57,16 @@ public class Client implements Runnable {
 
         try {
             while (true) {
-                stringBuffer.setLength(0);
+
                 buffer.clear();
                 socketChannel.read(buffer);
                 stringBuffer.append(new String(getByteArrayFromByteBuffer(buffer)));
-                System.out.println(stringBuffer);
+                if (Character.isDigit(stringBuffer.charAt(0))){
+                    phaseCheck();
+                }else{
+                    System.out.println(stringBuffer);
+                }
+                stringBuffer.setLength(0);
                 buffer.clear();
 
             }
@@ -88,6 +98,36 @@ public class Client implements Runnable {
         byteBuffer.rewind();
         byteBuffer.get(bytes);
         return bytes;
+    }
+
+    private void phaseHandler(char phase , String message , String infoMessage){
+        message = Encryption.XOR(message , key);
+        phase++;
+        stringBuffer.setLength(0);
+        stringBuffer.append(message);
+        stringBuffer.insert(0 , infoMessage + phase + "|");
+        stringBuffer.setCharAt(0 , infoMessage.charAt(2));
+        writeMessageToTheServer();
+    }
+
+    private void phaseCheck(){
+        char phase = stringBuffer.charAt(4);
+        String infoMessage = stringBuffer.substring(0 , 4);
+        String message = stringBuffer.substring(6 ,stringBuffer.length());
+        switch (phase){
+            case '0' :
+                phaseHandler(phase , message , infoMessage);
+                break;
+            case '1':
+                phaseHandler(phase , message , infoMessage);
+                break;
+            case '2':
+                message = Encryption.XOR(message , key);
+                System.out.println("Final Message : " + message);
+                break;
+            default:
+                System.out.println("Phase not found !");
+        }
     }
 
 
